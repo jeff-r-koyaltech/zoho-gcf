@@ -1,0 +1,32 @@
+https://creator.zoho.com/appbuilder/jeff_skillrev/skillrev-consult-landing-page/workflowbuilder/Run_Scripts_While_Adding_1/edit
+
+
+//validate given appointment booking time to be a future date
+if(input.Appointment_Date_Time <= zoho.currenttime || input.Alternative_Date_Time <= zoho.currenttime)
+{
+	alert "Please enter a valid future date!";
+	cancel submit;
+}
+// --------------------------------- ✨ gcloud func POC ✨ ---------------------------------
+jwtKey = "3H8A0mWN3O39OH0M9/YXvMysp1Z81JkRMcz6s9ouAHWhZSdtoQjz7p57MU0g03HTonh+KGYHyg+hIkJvT2pOaXV2Ei6ASXYCRK9OUHaFw1oNWoUyU/WQPdl5TS6cs37ztYf742rGuYPMtgoJ1C8vuf5FHh0c91CtVEW/Vlj9Izc=";
+currentDateTime = now.toString();
+epoch = currentDateTime.unixEpoch("EST");
+nowIat = epoch / 1000;
+// freshToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb3VyY2UiOiJab2hvIiwiaWF0IjoxNjgyNzEyNjgzfQ.MkrGu3mvSBNfOgcwuYQiI8sx9T4uW9_G90UW8yrfNw0";
+jwtData1 = concat("{ \"iat\": ",nowIat.toString());
+b64JwtData = zoho.encryption.base64Encode(concat(jwtData1," }"));
+b64Header = zoho.encryption.base64Encode("{\n  \"alg\": \"HS256\",\n  \"typ\": \"JWT\"\n}");
+hmacSource = b64Header.concat(".").concat(b64JwtData);
+b64Hmac = zoho.encryption.hmacsha256(jwtKey,hmacSource,"base64");
+freshToken = hmacSource.concat(".").concat(b64Hmac).replaceAll("=","");
+// JWT base64 is not supposed to have "=" in it
+header_data = Map();
+header_data.put("Content-Type","application/json");
+result = invokeurl
+[
+	url :"https://us-central1-timbersite-dev.cloudfunctions.net/zoho-leadgen"
+	type :POST
+	parameters:{"data":{"name":input.Name,"email":input.Email_Id,"phone":input.Mobile_Number},"token":freshToken,"iat":nowIat}
+	headers:header_data
+];
+// --------------------------------- ✨ gcloud func POC ✨ ---------------------------------

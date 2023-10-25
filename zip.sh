@@ -1,0 +1,1 @@
+zip deploy.zip index.js package.json yarn.lock
